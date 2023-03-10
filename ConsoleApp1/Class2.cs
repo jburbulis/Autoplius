@@ -1,7 +1,8 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Entity;
 using System.Linq;
 
 namespace Autoplius.Repository
@@ -14,13 +15,24 @@ namespace Autoplius.Repository
         // 
         // If you wish to target a different database and/or database provider, modify the 'AutopliusDatabase' 
         // connection string in the application configuration file.
+        //public AutopliusDatabase()
+          
+        //{
+        //}
+        //protected override void OnConfiguring(DbContextOptionsBuilder options)
+        //    => options.UseSqlite($@"Data Source=C:\Projects\individual\Test\autoplius.db");
+
+
         public AutopliusDatabase()
-            : base("name=AutopliusDatabase")
         {
         }
 
-        // Add a DbSet for each entity type that you want to include in your model. For more information 
-        // on configuring and using a Code First model, see http://go.microsoft.com/fwlink/?LinkId=390109.
+        protected override void OnConfiguring(DbContextOptionsBuilder options)
+        {
+            // connect to sqlite database
+            //options.UseSqlite($@"Data Source=C:\Projects\individual\Test\autoplius.db");
+            options.UseSqlite($@"Data Source=/home/jburbulis/Databases/autoplius.db");
+        }
         public virtual DbSet<Searches> Searches { get; set; }
         public virtual DbSet<SearchesItem> SearchesItem { get; set; }
     }
