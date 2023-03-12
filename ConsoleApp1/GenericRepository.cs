@@ -1,199 +1,235 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
-namespace Autoplius.Repository.Repositories
+namespace Autoplius.Repository.Repositories;
+
+public interface IGenericRepository<T> where T : class
 {
-    public interface IGenericRepository<T> where T : class
+    T Add(T entity);
+
+    T AddWithSave(T entity);
+
+    Task<T> AddWithSaveAsync(T entity);
+
+    bool Delete(T entity);
+
+    bool DeleteWithSave(T entity);
+
+    Task<bool> DeleteWithSaveAsync(T entity);
+
+    T Get(Expression<Func<T, bool>> whereCondition);
+
+    T Get(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
+
+    List<T> GetAll();
+
+    List<T> GetAll(Expression<Func<T, bool>> whereCondition);
+
+    List<T> GetAll(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
+
+    Task<List<T>> GetAllAsync();
+
+    Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition);
+
+    Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
+
+    Task<T> GetAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
+
+    Task<T> GetAsync(Expression<Func<T, bool>> whereCondition);
+
+    IQueryable<T> GetQueryable();
+
+    bool Update(T entity);
+
+    void UpdateWithSave(T entity);
+
+    Task UpdateWithSaveAsync(T entity);
+}
+
+public class GenericRepository<T> : IGenericRepository<T> where T : class
+{
+    protected AutopliusDatabase _context;
+    private readonly DbSet<T> dbSet;
+
+    public GenericRepository(AutopliusDatabase context)
     {
-        T Get(Expression<Func<T, bool>> whereCondition);
-        T Get(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
-        Task<T> GetAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
-        Task<T> GetAsync(Expression<Func<T, bool>> whereCondition);
-        T Add(T entity);
-        T AddWithSave(T entity);
-        Task<T> AddWithSaveAsync(T entity);
-        bool Update(T entity);
-        void UpdateWithSave(T entity);
-        Task UpdateWithSaveAsync(T entity);
-        bool Delete(T entity);
-        bool DeleteWithSave(T entity);
-        Task<bool> DeleteWithSaveAsync(T entity);
-        List<T> GetAll();
-        Task<List<T>> GetAllAsync();
-        List<T> GetAll(Expression<Func<T, bool>> whereCondition);
-        List<T> GetAll(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
-        Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition);
-        Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction);
-        IQueryable<T> GetQueryable();
+        _context = context;
+        dbSet = _context.Set<T>();
     }
 
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public virtual T Add(T entity)
     {
-        protected AutopliusDatabase _context;
-        private DbSet<T> dbSet;
+        dbSet.Add(entity);
+        _context.SaveChanges();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
 
-        public GenericRepository(AutopliusDatabase context)
-        {
-            this._context = context;
-            this.dbSet = _context.Set<T>();
-        }
+        return entity;
+    }
 
-        public virtual T Get(Expression<Func<T, bool>> whereCondition)
-        {
-            return dbSet.AsNoTracking().Where(whereCondition).FirstOrDefault();
-        }
+    public virtual T AddWithSave(T entity)
+    {
+        dbSet.Add(entity);
 
-        public virtual async Task<T> GetAsync(Expression<Func<T, bool>> whereCondition)
-        {
-            return await dbSet.AsNoTracking().Where(whereCondition).FirstOrDefaultAsync();
-        }
+        _context.SaveChanges();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
 
-        public virtual T Get(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
-        {
-            var result = dbSet;
-            IQueryable<T> resultWithEagerLoading = includeFunction(result);
+        return entity;
+    }
 
-            return resultWithEagerLoading.AsNoTracking().Where(whereCondition).FirstOrDefault();
-        }
+    public virtual async Task<T> AddWithSaveAsync(T entity)
+    {
+        dbSet.Add(entity);
 
-        public virtual async Task<T> GetAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
-        {
-            var result = dbSet;
-            IQueryable<T> resultWithEagerLoading = includeFunction(result);
+        await _context.SaveChangesAsync();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
 
-            return await resultWithEagerLoading.AsNoTracking().Where(whereCondition).FirstOrDefaultAsync();
-        }
+        return entity;
+    }
 
-        public virtual T Add(T entity)
-        {
+    public virtual bool Delete(T entity)
+    {
+        dbSet.Remove(entity);
 
-            dbSet.Add(entity);
-            _context.SaveChanges();
-            _context.Entry(entity).State = EntityState.Detached;
+        return true;
+    }
 
-            return entity;
-        }
+    public virtual bool DeleteWithSave(T entity)
+    {
+        dbSet.Remove(entity);
+        _context.SaveChanges();
 
-        public virtual T AddWithSave(T entity)
-        {
-            dbSet.Add(entity);
+        return true;
+    }
 
-            _context.SaveChanges();
-            _context.Entry(entity).State = EntityState.Detached;
+    public virtual async Task<bool> DeleteWithSaveAsync(T entity)
+    {
+        dbSet.Remove(entity);
 
-            return entity;
-        }
+        await _context.SaveChangesAsync();
 
-        public virtual async Task<T> AddWithSaveAsync(T entity)
-        {
-            dbSet.Add(entity);
+        return true;
+    }
 
-            await _context.SaveChangesAsync();
-            _context.Entry(entity).State = EntityState.Detached;
+    public virtual T Get(Expression<Func<T, bool>> whereCondition)
+    {
+        return dbSet.AsNoTracking()
+            .Where(whereCondition)
+            .FirstOrDefault();
+    }
 
-            return entity;
-        }
+    public virtual T Get(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
+    {
+        var result = dbSet;
+        var resultWithEagerLoading = includeFunction(result);
 
-        public virtual bool Update(T entity)
-        {
+        return resultWithEagerLoading.AsNoTracking()
+            .Where(whereCondition)
+            .FirstOrDefault();
+    }
 
-            dbSet.Attach(entity);
-            var entry = _context.Entry(entity);
-            entry.State =EntityState.Modified;
+    public virtual List<T> GetAll()
+    {
+        return dbSet.AsNoTracking()
+            .ToList();
+    }
 
+    public virtual List<T> GetAll(Expression<Func<T, bool>> whereCondition)
+    {
+        return dbSet.AsNoTracking()
+            .Where(whereCondition)
+            .ToList();
+    }
 
-            _context.SaveChanges();
-            _context.Entry(entity).State = EntityState.Detached;
+    public virtual List<T> GetAll(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
+    {
+        var result = dbSet;
+        var resultWithEagerLoading = includeFunction(result);
 
-            return true;
-        }
+        return resultWithEagerLoading.AsNoTracking()
+            .Where(whereCondition)
+            .ToList();
+    }
 
-        public virtual void UpdateWithSave(T entity)
-        {
-            dbSet.Attach(entity);
-            var entry = _context.Entry(entity);
-            entry.State = EntityState.Modified;
-            _context.SaveChanges();
-            _context.Entry(entity).State = EntityState.Detached;
-        }
+    public virtual async Task<List<T>> GetAllAsync()
+    {
+        return await dbSet.AsNoTracking()
+            .ToListAsync();
+    }
 
-        public virtual async Task UpdateWithSaveAsync(T entity)
-        {
-            dbSet.Attach(entity);
-            var entry = _context.Entry(entity);
-            entry.State = EntityState.Modified;
+    public virtual async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition)
+    {
+        return await dbSet.AsNoTracking()
+            .Where(whereCondition)
+            .ToListAsync();
+    }
 
-            await _context.SaveChangesAsync();
-            _context.Entry(entity).State = EntityState.Detached;
-        }
+    public virtual async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
+    {
+        var result = dbSet;
+        var resultWithEagerLoading = includeFunction(result);
 
-        public virtual bool Delete(T entity)
-        {
-            dbSet.Remove(entity);
+        return await resultWithEagerLoading.AsNoTracking()
+            .Where(whereCondition)
+            .ToListAsync();
+    }
 
-            return true;
-        }
+    public virtual async Task<T> GetAsync(Expression<Func<T, bool>> whereCondition)
+    {
+        return await dbSet.AsNoTracking()
+            .Where(whereCondition)
+            .FirstOrDefaultAsync();
+    }
 
-        public virtual bool DeleteWithSave(T entity)
-        {
-            dbSet.Remove(entity);
-            _context.SaveChanges();
+    public virtual async Task<T> GetAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
+    {
+        var result = dbSet;
+        var resultWithEagerLoading = includeFunction(result);
 
-            return true;
-        }
+        return await resultWithEagerLoading.AsNoTracking()
+            .Where(whereCondition)
+            .FirstOrDefaultAsync();
+    }
 
-        public virtual async Task<bool> DeleteWithSaveAsync(T entity)
-        {
-            dbSet.Remove(entity);
+    public virtual IQueryable<T> GetQueryable()
+    {
+        return dbSet.AsNoTracking()
+            .AsQueryable();
+    }
 
-            await _context.SaveChangesAsync();
+    public virtual bool Update(T entity)
+    {
+        dbSet.Attach(entity);
+        var entry = _context.Entry(entity);
+        entry.State = EntityState.Modified;
 
-            return true;
-        }
+        _context.SaveChanges();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
 
-        public virtual List<T> GetAll()
-        {
-            return dbSet.AsNoTracking().ToList();
-        }
+        return true;
+    }
 
-        public virtual async Task<List<T>> GetAllAsync()
-        {
-            return await dbSet.AsNoTracking().ToListAsync();
-        }
+    public virtual void UpdateWithSave(T entity)
+    {
+        dbSet.Attach(entity);
+        var entry = _context.Entry(entity);
+        entry.State = EntityState.Modified;
+        _context.SaveChanges();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
+    }
 
-        public virtual List<T> GetAll(Expression<Func<T, bool>> whereCondition)
-        {
-            return dbSet.AsNoTracking().Where(whereCondition).ToList();
-        }
+    public virtual async Task UpdateWithSaveAsync(T entity)
+    {
+        dbSet.Attach(entity);
+        var entry = _context.Entry(entity);
+        entry.State = EntityState.Modified;
 
-        public virtual List<T> GetAll(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
-        {
-            var result = dbSet;
-            IQueryable<T> resultWithEagerLoading = includeFunction(result);
-
-            return resultWithEagerLoading.AsNoTracking().Where(whereCondition).ToList();
-        }
-
-        public virtual async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition)
-        {
-            return await dbSet.AsNoTracking().Where(whereCondition).ToListAsync();
-        }
-
-        public virtual async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> whereCondition, Func<IQueryable<T>, IQueryable<T>> includeFunction)
-        {
-            var result = dbSet;
-            IQueryable<T> resultWithEagerLoading = includeFunction(result);
-
-            return await resultWithEagerLoading.AsNoTracking().Where(whereCondition).ToListAsync();
-        }
-
-        public virtual IQueryable<T> GetQueryable()
-        {
-            return dbSet.AsNoTracking().AsQueryable<T>();
-        }
+        await _context.SaveChangesAsync();
+        _context.Entry(entity)
+            .State = EntityState.Detached;
     }
 }
