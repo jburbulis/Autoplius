@@ -48,8 +48,8 @@ public interface IGenericRepository<T> where T : class
 
 public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
-    protected AutopliusDatabase _context;
     private readonly DbSet<T> dbSet;
+    protected AutopliusDatabase _context;
 
     public GenericRepository(AutopliusDatabase context)
     {
