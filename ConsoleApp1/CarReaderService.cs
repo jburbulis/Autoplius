@@ -255,7 +255,7 @@ public sealed class CarReaderService
         }
     }
 
-    private static void SendMail(string bodyStr, string subjectStr, string displayName)
+    public void SendMail(string bodyStr, string subjectStr, string displayName)
     {
         var fromAddress = new MailAddress("kaulazs@gmail.com", displayName);
         var toAddress = new MailAddress("j.burbulis@gmail.com", "Justinas");
